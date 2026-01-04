@@ -394,7 +394,7 @@ async def image_code_review_endpoint(
     
 @app.get("/uploads/")
 async def get_uploaded_file():
-    return {"message": "Use /uploads/<file_path> to access files."}
+    return {"message": "Use /uploads/<file_path> to access files :)."}
 
 if __name__ == "__main__":
     import uvicorn
