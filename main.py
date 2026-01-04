@@ -392,7 +392,7 @@ async def image_code_review_endpoint(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.get("/uploads")
+@app.get("/uploads/")
 async def get_uploaded_file():
     return {"message": "Use /uploads/<file_path> to access files."}
 
