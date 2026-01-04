@@ -391,6 +391,10 @@ async def image_code_review_endpoint(
             return image_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/uploads")
+async def get_uploaded_file():
+    return {"message": "Use /uploads/<file_path> to access files."}
 
 if __name__ == "__main__":
     import uvicorn
