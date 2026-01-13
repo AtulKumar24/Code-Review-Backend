@@ -104,3 +104,7 @@ class ResetPasswordRequest(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+    
+class Example(BaseModel):
+    input: CodeReviewRequest
+    output: CodeReviewResult
