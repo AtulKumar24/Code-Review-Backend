@@ -22,10 +22,10 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd ${{ secrets.EC2_PATH }}
+          ssh -i ~/.ssh/id_ed25519 ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/Backend/Code-Review-Backend
             git pull origin main
-            source venv/bin/activate
+            source ../venv/bin/activate
             pip install -r requirements.txt
             sudo systemctl restart fastapi
           EOF

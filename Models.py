@@ -4,9 +4,6 @@ from typing import Optional, List
 from datetime import datetime
 from bson import ObjectId
 from pydantic import ConfigDict
-from enum import Enum
-
-from tensorboard import summary
 
 class User(BaseModel):
     id : Optional[str] = Field(None, alias="_id")
