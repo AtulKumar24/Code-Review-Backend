@@ -12,9 +12,11 @@ from auth import create_access_token, create_otp, create_refresh_token, get_curr
 import Image_LLM
 from Models import CodeReviewRequest, ImageCodeReviewRequest, ImageReview, RefreshRequest, User, CodeReviewResult , LoginRequest, TokenResponse, UserCreate, UserCreate, UserOut, UserUpdate , ForgotPasswordRequest , ResetPasswordRequest
 import uvicorn
-from LLM import code_review
+from LLM import code_review, get_code_review
 from email_service import send_email
 import uuid, os, shutil
+
+from github import get_file_content, get_github_file, get_repo_tree, parseUrl
 
 
 
@@ -395,6 +397,39 @@ async def image_code_review_endpoint(
 @app.get("/files/info")
 async def get_uploaded_file():
     return {"message": "Use /uploads/<file_path> to access files :)."}
+
+
+@app.get("/github/files")
+async def github_files(url: str):
+    try:
+        owner, repo = parseUrl(url)
+        tree = get_repo_tree(owner, repo)
+        return [
+            item["path"] for item in tree if item["type"] == "blob"
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/github/file/")
+async def github_file_content(url: str, file_path: str):
+    try:
+        owner, repo = parseUrl(url)
+        content = get_file_content(owner, repo, file_path)
+        return {"path": file_path, "content": content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))    
+    
+@app.get("/github/review", response_model=CodeReviewResult)
+async def github_file_review(url: str, file_path: str , current_user = Depends(get_current_user)):
+    try:
+        review = get_code_review(
+            url=url,
+            file_path=file_path,
+            user_id=str(current_user.id)
+        )
+        return review
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,3 +1,4 @@
+from typing import Optional
 from bson import ObjectId
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
@@ -5,9 +6,8 @@ from dotenv import load_dotenv
 import bcrypt
 import os
 import datetime
-import base64
 import pytz
-from Models import User , CodeReviewResult, UserOut
+from Models import GitHubReviewCache, User , CodeReviewResult, UserOut
 
 
 load_dotenv()
@@ -27,6 +27,7 @@ users_collection = db['users']
 code_reviews_collection = db['code_reviews']
 refresh_tokens = db["refresh_tokens"]
 otp_collection = db["otps"]
+github_review_collection = db["github_reviews"]
 
 def create_user(user_data : dict):
     hashed_password = bcrypt.hashpw(user_data["password"].encode(), bcrypt.gensalt()).decode()
@@ -217,3 +218,29 @@ def delete_otp(email: str):
 
 def normalize_email(email: str) -> str:
     return email.strip().lower()
+
+def get_cached_review(user_id: str, repo: str, file_path: str, commit_sha: str) -> Optional[GitHubReviewCache]:
+    doc = github_review_collection.find_one({
+        "user_id": user_id,
+        "repo": repo,
+        "file_path": file_path,
+        "commit_sha": commit_sha
+    })
+    
+    if doc:
+        # Convert MongoDB doc to Pydantic model
+        return GitHubReviewCache(**doc)
+    return None
+
+def store_github_review(review_cache: GitHubReviewCache):
+    github_review_collection.update_one(
+        {
+            "review_id": review_cache.review_id,
+            "user_id": review_cache.user_id,
+            "repo": review_cache.repo,
+            "file_path": review_cache.file_path,
+            "commit_sha": review_cache.commit_sha
+        },
+        {"$set": review_cache.dict()},
+        upsert=True
+    )

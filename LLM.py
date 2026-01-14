@@ -1,17 +1,20 @@
 from datetime import datetime
 import logging
+import uuid
 import dotenv
 from fastapi import HTTPException
 import json
 from Gemini import _call_gemini_with_retries
-from Models import CodeReviewResult
-from Database import store_review
+from Models import CodeReviewResult, GitHubReviewCache
+from Database import get_cached_review, store_github_review, store_review
 from typing import Any, Dict, List
 from pathlib import Path
 from google import genai
 from google.genai import types
 import os
 from dotenv import load_dotenv
+
+from github import get_file_content, get_latest_commit_sha, parseUrl
 
 
 load_dotenv()
@@ -51,7 +54,7 @@ with ALL fields present:
     }
   ],
   "codeLength": number,
-  "codeLanguage": "string",
+  "codeLanguage": "if not given decide otherwise string",
   "suggestions": ["list", "of", "general", "suggestions"],
   "issuesFound": number,
   "improved_code": "string",
@@ -128,4 +131,40 @@ def code_review(code: str, user_id: str, language: str | None = None) -> dict:
 
 
 
-        
+def get_code_review(url: str, file_path: str, user_id: str):
+    
+    owner, repo = parseUrl(url)
+    
+    commit_sha = get_latest_commit_sha(owner, repo, file_path)
+    
+    cached = get_cached_review(user_id, repo, file_path, commit_sha)
+    if cached:
+        print(f"✨ Cache Hit for {file_path}")
+        return {
+            "review_id": cached.review_id,
+            "result": cached.result,
+            "status": "cached"
+        }
+    
+    print(f"🤖 Cache Miss. Requesting Gemini review for {file_path}...")
+    
+    content = get_file_content(owner, repo, file_path)
+    review_result = code_review(content, user_id, language=None)
+    
+    new_review_id = str(uuid.uuid4())
+    review_cache = GitHubReviewCache(
+        user_id=user_id,
+        repo=repo,
+        file_path=file_path,
+        commit_sha=commit_sha,
+        result=review_result,
+        review_id=new_review_id
+    )
+    
+    store_github_review(review_cache)
+    
+    return {
+        "review_id": new_review_id,
+        "result": review_result,
+        "status": "new"
+    }

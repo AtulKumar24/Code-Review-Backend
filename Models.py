@@ -1,9 +1,10 @@
 from symtable import Class
 from pydantic import BaseModel, Field, EmailStr
-from typing import Optional, List
+from typing import Any, Optional, List
 from datetime import datetime
 from bson import ObjectId
 from pydantic import ConfigDict
+import uuid
 
 class User(BaseModel):
     id : Optional[str] = Field(None, alias="_id")
@@ -101,7 +102,12 @@ class ResetPasswordRequest(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
-    
-class Example(BaseModel):
-    input: CodeReviewRequest
-    output: CodeReviewResult
+
+class GitHubReviewCache(BaseModel):
+    user_id: str
+    repo: str
+    file_path: str
+    commit_sha: str
+    review_id : str = Field(default_factory=lambda: str(uuid.uuid4()))
+    result : Any
+    created_at: datetime = Field(default_factory=datetime.utcnow)
