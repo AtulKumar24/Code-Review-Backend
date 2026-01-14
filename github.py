@@ -2,9 +2,10 @@ import base64
 import requests
 import os
 import dotenv
-from LLM import code_review
 from typing import Optional
 
+
+dotenv.load_dotenv()
 
 HEADERS = {
     "Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}",
